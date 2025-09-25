@@ -15,6 +15,9 @@ A comprehensive Node.js SDK and command-line tool for scanning, analyzing, and o
 - **CLI Tool**: Powerful command-line interface for easy integration
 - **TypeScript Support**: Fully typed for better development experience
 - **Export Formats**: Support for JSON, YAML, CSV, and table formats
+- **Terraform Generation**: Generate Infrastructure as Code from scanned resources
+- **Multi-Cloud IaC**: Support for AWS, Azure, and GCP Terraform providers
+- **Optimization Integration**: Apply cost optimizations to generated Terraform
 
 ## 📦 Installation
 
@@ -104,6 +107,21 @@ optimisely optimize --provider gcp --severity low --output optimizations.json
 ### List Supported Providers
 ```bash
 optimisely providers
+```
+
+### Generate Terraform Infrastructure as Code
+```bash
+# Generate from existing scan results
+optimisely terraform --input scan-results.json --output ./terraform --variables --outputs
+
+# Scan and generate Terraform in one step
+optimisely terraform --provider aws --region us-east-1 --rescan --output ./terraform --variables --outputs
+
+# Generate with optimization recommendations applied
+optimisely terraform --provider aws --rescan --optimized --output ./terraform-optimized
+
+# Generate modular Terraform structure
+optimisely terraform --input scan-results.json --modules --output ./terraform-modules
 ```
 
 ## 💻 SDK Usage
@@ -205,6 +223,53 @@ const csvOutput = sdk.exportResults(result, 'csv');
 // Save to file
 import { writeFileSync } from 'fs';
 writeFileSync('scan-results.json', jsonOutput);
+```
+
+### Generate Terraform Infrastructure as Code
+
+```typescript
+import { generateTerraform, TerraformOptions } from 'optimisely-cloud-sdk/terraform';
+
+// Scan your infrastructure
+const scanResult = await sdk.scanCloud(config, {
+  includeCostAnalysis: true,
+  includeOptimizationRecommendations: true
+});
+
+// Generate Terraform configuration
+const terraformOptions: TerraformOptions = {
+  provider: 'aws',
+  variables: true,
+  outputs: true,
+  modules: false,
+  optimized: true  // Apply cost optimizations
+};
+
+const terraformOutput = await generateTerraform(scanResult, terraformOptions);
+
+// Save Terraform files
+import { writeFileSync, mkdirSync } from 'fs';
+import { join } from 'path';
+
+const outputDir = './generated-terraform';
+mkdirSync(outputDir, { recursive: true });
+
+writeFileSync(join(outputDir, 'main.tf'), terraformOutput.mainTf);
+writeFileSync(join(outputDir, 'provider.tf'), terraformOutput.providerTf);
+
+if (terraformOutput.variablesTf) {
+  writeFileSync(join(outputDir, 'variables.tf'), terraformOutput.variablesTf);
+}
+
+if (terraformOutput.outputsTf) {
+  writeFileSync(join(outputDir, 'outputs.tf'), terraformOutput.outputsTf);
+}
+
+if (terraformOutput.terraformTfvars) {
+  writeFileSync(join(outputDir, 'terraform.tfvars.example'), terraformOutput.terraformTfvars);
+}
+
+console.log('Terraform configuration generated successfully!');
 ```
 
 ## 🔑 Authentication

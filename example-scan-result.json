@@ -1,0 +1,265 @@
+{
+  "provider": "aws",
+  "region": "us-east-1",
+  "timestamp": "2024-12-25T10:30:00.000Z",
+  "totalResources": 8,
+  "resources": {
+    "compute": [
+      {
+        "id": "i-1234567890abcdef0",
+        "name": "web-server-prod",
+        "type": "compute",
+        "provider": "aws",
+        "region": "us-east-1",
+        "resourceType": "EC2Instance",
+        "status": "running",
+        "createdAt": "2024-12-01T10:00:00.000Z",
+        "tags": {
+          "Environment": "production",
+          "Project": "web-app",
+          "Owner": "devops-team"
+        },
+        "instanceType": "t3.medium",
+        "vCpus": 2,
+        "memory": 4,
+        "availabilityZone": "us-east-1a",
+        "subnetId": "subnet-12345678",
+        "publicIp": "54.123.45.67",
+        "privateIp": "10.0.1.10",
+        "storage": {
+          "size": 20,
+          "type": "gp3",
+          "encrypted": true
+        },
+        "estimatedMonthlyCost": 25.50
+      },
+      {
+        "id": "i-0987654321fedcba0",
+        "name": "app-server-prod",
+        "type": "compute",
+        "provider": "aws",
+        "region": "us-east-1",
+        "resourceType": "EC2Instance",
+        "status": "running",
+        "createdAt": "2024-12-01T11:00:00.000Z",
+        "tags": {
+          "Environment": "production",
+          "Project": "web-app",
+          "Owner": "devops-team"
+        },
+        "instanceType": "m5.large",
+        "vCpus": 2,
+        "memory": 8,
+        "availabilityZone": "us-east-1b",
+        "subnetId": "subnet-87654321",
+        "publicIp": "54.123.45.68",
+        "privateIp": "10.0.2.10",
+        "storage": {
+          "size": 50,
+          "type": "gp3",
+          "encrypted": true
+        },
+        "estimatedMonthlyCost": 69.60
+      }
+    ],
+    "storage": [
+      {
+        "id": "bucket-web-app-assets",
+        "name": "web-app-assets",
+        "type": "storage",
+        "provider": "aws",
+        "region": "us-east-1",
+        "resourceType": "S3Bucket",
+        "status": "active",
+        "createdAt": "2024-11-15T09:00:00.000Z",
+        "tags": {
+          "Environment": "production",
+          "Project": "web-app",
+          "Purpose": "static-assets"
+        },
+        "storageType": "Standard",
+        "storage": {
+          "size": 1024,
+          "type": "Standard",
+          "encrypted": true
+        },
+        "estimatedMonthlyCost": 23.55
+      },
+      {
+        "id": "bucket-web-app-backups",
+        "name": "web-app-backups",
+        "type": "storage",
+        "provider": "aws",
+        "region": "us-east-1",
+        "resourceType": "S3Bucket",
+        "status": "active",
+        "createdAt": "2024-11-15T09:30:00.000Z",
+        "tags": {
+          "Environment": "production",
+          "Project": "web-app",
+          "Purpose": "backups"
+        },
+        "storageType": "IA",
+        "storage": {
+          "size": 5120,
+          "type": "IA",
+          "encrypted": true
+        },
+        "estimatedMonthlyCost": 64.00
+      }
+    ],
+    "database": [
+      {
+        "id": "db-web-app-mysql",
+        "name": "web-app-mysql",
+        "type": "database",
+        "provider": "aws",
+        "region": "us-east-1",
+        "resourceType": "RDSInstance",
+        "status": "available",
+        "createdAt": "2024-11-20T14:00:00.000Z",
+        "tags": {
+          "Environment": "production",
+          "Project": "web-app",
+          "Engine": "mysql"
+        },
+        "engine": "mysql",
+        "engineVersion": "8.0.35",
+        "instanceType": "db.t3.medium",
+        "storage": {
+          "size": 100,
+          "type": "gp3",
+          "encrypted": true
+        },
+        "estimatedMonthlyCost": 65.50
+      }
+    ],
+    "network": [
+      {
+        "id": "vpc-12345678",
+        "name": "web-app-vpc",
+        "type": "network",
+        "provider": "aws",
+        "region": "us-east-1",
+        "resourceType": "VPC",
+        "status": "available",
+        "createdAt": "2024-11-01T08:00:00.000Z",
+        "tags": {
+          "Environment": "production",
+          "Project": "web-app",
+          "Purpose": "main-vpc"
+        },
+        "estimatedMonthlyCost": 0
+      },
+      {
+        "id": "subnet-12345678",
+        "name": "web-app-public-1a",
+        "type": "network",
+        "provider": "aws",
+        "region": "us-east-1",
+        "resourceType": "Subnet",
+        "status": "available",
+        "createdAt": "2024-11-01T08:15:00.000Z",
+        "tags": {
+          "Environment": "production",
+          "Project": "web-app",
+          "Tier": "public"
+        },
+        "estimatedMonthlyCost": 0
+      },
+      {
+        "id": "sg-12345678",
+        "name": "web-app-security-group",
+        "type": "network",
+        "provider": "aws",
+        "region": "us-east-1",
+        "resourceType": "SecurityGroup",
+        "status": "active",
+        "createdAt": "2024-11-01T08:30:00.000Z",
+        "tags": {
+          "Environment": "production",
+          "Project": "web-app",
+          "Purpose": "web-access"
+        },
+        "estimatedMonthlyCost": 0
+      }
+    ],
+    "serverless": [
+      {
+        "id": "lambda-image-resizer",
+        "name": "image-resizer",
+        "type": "serverless",
+        "provider": "aws",
+        "region": "us-east-1",
+        "resourceType": "LambdaFunction",
+        "status": "active",
+        "createdAt": "2024-12-05T16:00:00.000Z",
+        "tags": {
+          "Environment": "production",
+          "Project": "web-app",
+          "Function": "image-processing"
+        },
+        "estimatedMonthlyCost": 4.25
+      }
+    ]
+  },
+  "estimatedMonthlyCost": {
+    "total": 252.40,
+    "currency": "USD",
+    "breakdown": {
+      "compute": 95.10,
+      "storage": 87.55,
+      "database": 65.50,
+      "network": 0,
+      "serverless": 4.25
+    }
+  },
+  "optimizationOpportunities": [
+    {
+      "id": "oversized-instances",
+      "type": "cost",
+      "severity": "medium",
+      "title": "Over-provisioned EC2 Instances",
+      "description": "Found 1 instance that could be downsized based on utilization",
+      "recommendation": "Consider downsizing m5.large to m5.medium to reduce costs",
+      "potentialSavings": {
+        "monthly": 34.00,
+        "annual": 408.00,
+        "currency": "USD"
+      },
+      "effort": "low",
+      "impact": "medium",
+      "resourceIds": ["i-0987654321fedcba0"],
+      "implementationSteps": [
+        "Stop the instance",
+        "Change instance type to m5.medium",
+        "Start the instance",
+        "Monitor performance"
+      ]
+    },
+    {
+      "id": "unused-storage",
+      "type": "cost",
+      "severity": "low",
+      "title": "Underutilized S3 Storage",
+      "description": "Some S3 buckets have low access patterns",
+      "recommendation": "Consider moving infrequently accessed data to IA or Glacier",
+      "potentialSavings": {
+        "monthly": 12.00,
+        "annual": 144.00,
+        "currency": "USD"
+      },
+      "effort": "medium",
+      "impact": "low",
+      "resourceIds": ["bucket-web-app-backups"],
+      "implementationSteps": [
+        "Set up lifecycle policy",
+        "Move old backups to Glacier",
+        "Monitor access patterns"
+      ]
+    }
+  ],
+  "scanDuration": 45000,
+  "errors": [],
+  "warnings": []
+}

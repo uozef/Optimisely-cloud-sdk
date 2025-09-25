@@ -312,6 +312,149 @@ optimisely --help
 optimisely scan --help
 ```
 
+## Terraform Infrastructure as Code Generation
+
+### Basic Terraform Generation
+
+```bash
+# Generate Terraform from scan results
+optimisely terraform --input scan-results.json --output ./terraform
+
+# Scan and generate Terraform in one command
+optimisely terraform --provider aws --region us-east-1 --rescan --output ./terraform
+
+# Generate with variables and outputs files
+optimisely terraform --input scan-results.json --variables --outputs --output ./terraform
+```
+
+### Advanced Terraform Options
+
+```bash
+# Generate optimized Terraform (applies cost optimizations)
+optimisely terraform --provider aws --rescan --optimized --output ./terraform-optimized
+
+# Generate modular Terraform structure
+optimisely terraform --input scan-results.json --modules --output ./terraform-modules
+
+# Generate for different cloud providers
+optimisely terraform --provider azure --rescan --variables --outputs --output ./azure-terraform
+optimisely terraform --provider gcp --rescan --variables --outputs --output ./gcp-terraform
+```
+
+### Terraform Workflow Integration
+
+```bash
+#!/bin/bash
+# terraform-workflow.sh - Complete scan-to-deploy workflow
+
+# Step 1: Scan existing infrastructure
+echo "🔍 Scanning infrastructure..."
+optimisely scan --provider aws --region us-east-1 \
+  --include-cost-analysis \
+  --include-optimization \
+  --output current-infrastructure.json
+
+# Step 2: Generate optimized Terraform
+echo "🏗️ Generating optimized Terraform..."
+optimisely terraform \
+  --input current-infrastructure.json \
+  --optimized \
+  --variables \
+  --outputs \
+  --output ./terraform-optimized
+
+# Step 3: Review and deploy
+echo "📋 Generated Terraform files:"
+ls -la ./terraform-optimized
+
+echo "📝 Next steps:"
+echo "1. cd terraform-optimized"
+echo "2. cp terraform.tfvars.example terraform.tfvars"
+echo "3. Edit terraform.tfvars with your values"
+echo "4. terraform init"
+echo "5. terraform plan"
+echo "6. terraform apply"
+```
+
+### CI/CD Integration with Terraform
+
+```bash
+#!/bin/bash
+# ci-terraform-pipeline.sh - CI/CD pipeline integration
+
+set -e
+
+# Environment variables
+ENVIRONMENT=${ENVIRONMENT:-staging}
+PROVIDER=${PROVIDER:-aws}
+REGION=${REGION:-us-east-1}
+
+echo "🚀 Infrastructure Pipeline - $ENVIRONMENT"
+
+# Scan production infrastructure
+optimisely scan --provider $PROVIDER --region $REGION \
+  --include-cost-analysis \
+  --include-optimization \
+  --output scan-$ENVIRONMENT.json
+
+# Generate Terraform with optimizations
+optimisely terraform \
+  --input scan-$ENVIRONMENT.json \
+  --optimized \
+  --variables \
+  --outputs \
+  --output terraform-$ENVIRONMENT
+
+# Validate Terraform
+cd terraform-$ENVIRONMENT
+terraform init
+terraform validate
+terraform plan -out=tfplan
+
+# Apply if on main branch
+if [ "$CI_BRANCH" = "main" ]; then
+  terraform apply -auto-approve tfplan
+  echo "✅ Infrastructure deployed to $ENVIRONMENT"
+else
+  echo "📋 Terraform plan generated - review required"
+fi
+```
+
+### Infrastructure Drift Detection
+
+```bash
+#!/bin/bash
+# drift-detection.sh - Detect infrastructure changes
+
+# Scan current state
+optimisely scan --provider aws --region us-east-1 --output current-state.json
+
+# Generate Terraform from current state
+optimisely terraform --input current-state.json --output current-terraform
+
+# Compare with version control
+if [ -d "terraform-baseline" ]; then
+  echo "🔍 Detecting infrastructure drift..."
+
+  # Use terraform plan to detect drift
+  cd current-terraform
+  cp ../terraform-baseline/terraform.tfvars .
+  terraform init
+  terraform plan -detailed-exitcode
+
+  if [ $? -eq 2 ]; then
+    echo "⚠️ Infrastructure drift detected!"
+    echo "Review terraform plan output above"
+    exit 1
+  else
+    echo "✅ No infrastructure drift detected"
+  fi
+else
+  echo "📁 Creating baseline Terraform configuration..."
+  cp -r current-terraform terraform-baseline
+fi
+```
+
 ## Best Practices
 
 1. **Regular Scanning**: Run weekly scans to track resource changes
@@ -321,6 +464,9 @@ optimisely scan --help
 5. **Resource Tagging**: Use consistent tagging for better filtering
 6. **Multi-Region**: Scan all regions you use resources in
 7. **Documentation**: Keep scan results for historical analysis
+8. **Infrastructure as Code**: Use Terraform generation for reproducible infrastructure
+9. **Drift Detection**: Regularly check for infrastructure drift
+10. **Optimization Integration**: Apply optimization recommendations through IaC
 
 ## Support
 

@@ -8,7 +8,10 @@ import { writeFileSync } from 'fs';
 import * as dotenv from 'dotenv';
 import { OptimiselySDK } from './index';
 import { CloudConnectorConfig, ScanOptions } from './types';
+import { generateTerraform, TerraformOptions } from './terraform';
 import { createLogger, format, transports } from 'winston';
+import { mkdirSync, existsSync } from 'fs';
+import * as path from 'path';
 
 dotenv.config();
 
@@ -130,6 +133,29 @@ program
     } catch (error) {
       logger.error('Optimization failed:', error);
       console.error(chalk.red('❌ Optimization failed:'), error instanceof Error ? error.message : error);
+      process.exit(1);
+    }
+  });
+
+// Terraform generation command
+program
+  .command('terraform')
+  .description('Generate Terraform configuration from scanned cloud infrastructure')
+  .option('-p, --provider <provider>', 'Cloud provider (aws, azure, gcp)', 'aws')
+  .option('-r, --region <region>', 'Cloud region')
+  .option('-i, --input <file>', 'Input scan results file (JSON format)')
+  .option('-o, --output <dir>', 'Output directory for Terraform files', './terraform')
+  .option('--variables', 'Generate variables.tf file', false)
+  .option('--outputs', 'Generate outputs.tf file', false)
+  .option('--modules', 'Generate modular Terraform structure', false)
+  .option('--optimized', 'Apply cost optimizations to generated resources', false)
+  .option('--rescan', 'Perform new scan before generating Terraform', false)
+  .action(async (options) => {
+    try {
+      await handleTerraformCommand(options);
+    } catch (error) {
+      logger.error('Terraform generation failed:', error);
+      console.error(chalk.red('❌ Terraform generation failed:'), error instanceof Error ? error.message : error);
       process.exit(1);
     }
   });
@@ -389,6 +415,371 @@ async function handleOptimizeCommand(options: any) {
     spinner.fail('Optimization analysis failed');
     throw error;
   }
+}
+
+async function handleTerraformCommand(options: any) {
+  const spinner = ora('Initializing Terraform generation...').start();
+
+  try {
+    let scanResult;
+
+    // Check if we should use existing scan results or perform a new scan
+    if (options.input && existsSync(options.input)) {
+      spinner.text = 'Loading scan results...';
+      const inputData = require(path.resolve(options.input));
+      scanResult = inputData;
+      spinner.succeed(`Loaded scan results from ${options.input}`);
+    } else if (options.rescan || !options.input) {
+      // Perform new scan
+      spinner.text = `Scanning ${options.provider.toUpperCase()} infrastructure...`;
+
+      const config = await getCloudConfig(options.provider, options.region);
+      const sdk = new OptimiselySDK();
+
+      scanResult = await sdk.scanCloud(config, {
+        includeCostAnalysis: true,
+        includeOptimizationRecommendations: options.optimized
+      });
+
+      spinner.succeed(`Scan completed! Found ${scanResult.totalResources} resources`);
+    } else {
+      throw new Error(`Input file ${options.input} not found. Use --rescan to perform a new scan.`);
+    }
+
+    // Generate Terraform configuration
+    spinner.start('Generating Terraform configuration...');
+
+    const terraformOptions: TerraformOptions = {
+      provider: options.provider,
+      outputDir: options.output,
+      variables: options.variables,
+      outputs: options.outputs,
+      modules: options.modules,
+      optimized: options.optimized
+    };
+
+    const terraformOutput = await generateTerraform(scanResult, terraformOptions);
+
+    // Create output directory if it doesn't exist
+    if (!existsSync(options.output)) {
+      mkdirSync(options.output, { recursive: true });
+    }
+
+    // Write Terraform files
+    const outputDir = path.resolve(options.output);
+
+    // Main configuration file
+    writeFileSync(path.join(outputDir, 'main.tf'), terraformOutput.mainTf);
+
+    // Provider configuration
+    writeFileSync(path.join(outputDir, 'provider.tf'), terraformOutput.providerTf);
+
+    // Variables file (if requested)
+    if (terraformOutput.variablesTf) {
+      writeFileSync(path.join(outputDir, 'variables.tf'), terraformOutput.variablesTf);
+    }
+
+    // Outputs file (if requested)
+    if (terraformOutput.outputsTf) {
+      writeFileSync(path.join(outputDir, 'outputs.tf'), terraformOutput.outputsTf);
+    }
+
+    // Terraform variables file
+    if (terraformOutput.terraformTfvars) {
+      writeFileSync(path.join(outputDir, 'terraform.tfvars.example'), terraformOutput.terraformTfvars);
+    }
+
+    // Modules (if requested)
+    if (terraformOutput.modules && options.modules) {
+      const modulesDir = path.join(outputDir, 'modules');
+      if (!existsSync(modulesDir)) {
+        mkdirSync(modulesDir, { recursive: true });
+      }
+
+      Object.entries(terraformOutput.modules).forEach(([moduleName, moduleContent]) => {
+        const moduleDir = path.join(modulesDir, moduleName);
+        if (!existsSync(moduleDir)) {
+          mkdirSync(moduleDir, { recursive: true });
+        }
+        writeFileSync(path.join(moduleDir, 'main.tf'), moduleContent);
+      });
+    }
+
+    // Create startup scripts directory with example files
+    const scriptsDir = path.join(outputDir, 'startup-scripts');
+    if (!existsSync(scriptsDir)) {
+      mkdirSync(scriptsDir, { recursive: true });
+    }
+
+    // Create example startup script
+    const exampleStartupScript = `#!/bin/bash
+
+# Optimisely Infrastructure Startup Script
+# This script runs when the instance starts
+
+# Update system packages
+apt-get update -y
+apt-get upgrade -y
+
+# Install basic tools
+apt-get install -y curl wget git htop
+
+# Install Docker (optional)
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+
+# Install Node.js (optional)
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+apt-get install -y nodejs
+
+# Set up application user
+useradd -m -s /bin/bash appuser
+
+# Log completion
+echo "$(date): Startup script completed" >> /var/log/startup.log
+`;
+
+    // Write example startup scripts for each instance
+    if (scanResult.resources.compute.length > 0) {
+      scanResult.resources.compute.forEach((instance: any, index: number) => {
+        const resourceName = sanitizeResourceName(instance.name || `instance_${index}`);
+        writeFileSync(path.join(scriptsDir, `${resourceName}.sh`), exampleStartupScript);
+      });
+    } else {
+      writeFileSync(path.join(scriptsDir, 'example.sh'), exampleStartupScript);
+    }
+
+    // Create README with instructions
+    const readmeContent = generateTerraformReadme(scanResult, terraformOptions, outputDir);
+    writeFileSync(path.join(outputDir, 'README.md'), readmeContent);
+
+    spinner.succeed('Terraform configuration generated successfully!');
+
+    // Display summary
+    console.log(chalk.blue('\n🏗️  Terraform Generation Summary:'));
+    console.log(chalk.green(`  • Provider: ${options.provider.toUpperCase()}`));
+    console.log(chalk.green(`  • Resources: ${scanResult.totalResources}`));
+    console.log(chalk.green(`  • Output Directory: ${outputDir}`));
+    console.log(chalk.green('  • Files Generated:'));
+    console.log(chalk.white('    - main.tf (main configuration)'));
+    console.log(chalk.white('    - provider.tf (provider configuration)'));
+
+    if (terraformOutput.variablesTf) {
+      console.log(chalk.white('    - variables.tf (input variables)'));
+    }
+
+    if (terraformOutput.outputsTf) {
+      console.log(chalk.white('    - outputs.tf (output values)'));
+    }
+
+    console.log(chalk.white('    - terraform.tfvars.example (example variables)'));
+    console.log(chalk.white('    - startup-scripts/ (instance startup scripts)'));
+    console.log(chalk.white('    - README.md (deployment instructions)'));
+
+    if (options.modules && terraformOutput.modules) {
+      console.log(chalk.white('    - modules/ (modular structure)'));
+    }
+
+    console.log(chalk.yellow('\n📋 Next Steps:'));
+    console.log(chalk.white(`  1. cd ${outputDir}`));
+    console.log(chalk.white('  2. Copy terraform.tfvars.example to terraform.tfvars'));
+    console.log(chalk.white('  3. Edit terraform.tfvars with your values'));
+    console.log(chalk.white('  4. Run: terraform init'));
+    console.log(chalk.white('  5. Run: terraform plan'));
+    console.log(chalk.white('  6. Run: terraform apply'));
+
+    if (scanResult.estimatedMonthlyCost?.total > 0) {
+      console.log(chalk.yellow(`\n💰 Estimated Monthly Cost: $${scanResult.estimatedMonthlyCost.total}`));
+    }
+
+    if (options.optimized && scanResult.optimizationOpportunities?.length > 0) {
+      const totalSavings = scanResult.optimizationOpportunities.reduce(
+        (sum: number, opp: any) => sum + (opp.potentialSavings?.monthly || 0), 0
+      );
+      if (totalSavings > 0) {
+        console.log(chalk.green(`💡 Applied optimizations with potential savings: $${totalSavings}/month`));
+      }
+    }
+
+  } catch (error) {
+    spinner.fail('Terraform generation failed');
+    throw error;
+  }
+}
+
+function generateTerraformReadme(scanResult: any, options: TerraformOptions, outputDir: string): string {
+  return `# Terraform Infrastructure Configuration
+
+Generated by Optimisely Cloud SDK on ${new Date().toISOString()}
+
+## Overview
+
+This Terraform configuration recreates your ${options.provider.toUpperCase()} infrastructure based on the scan performed on ${scanResult.timestamp}.
+
+### Infrastructure Summary
+- **Provider**: ${options.provider.toUpperCase()}
+- **Region**: ${scanResult.region}
+- **Total Resources**: ${scanResult.totalResources}
+- **Compute Instances**: ${scanResult.resources.compute.length}
+- **Storage Resources**: ${scanResult.resources.storage.length}
+- **Database Resources**: ${scanResult.resources.database.length}
+- **Network Resources**: ${scanResult.resources.network.length}
+- **Serverless Resources**: ${scanResult.resources.serverless.length}
+
+${scanResult.estimatedMonthlyCost?.total > 0 ? `### Estimated Monthly Cost
+$${scanResult.estimatedMonthlyCost.total}
+
+#### Cost Breakdown
+${Object.entries(scanResult.estimatedMonthlyCost.breakdown).map(([service, cost]) =>
+  `- ${service}: $${cost}`
+).join('\n')}
+` : ''}
+
+## Prerequisites
+
+1. **Terraform**: Install Terraform >= 1.0
+   \`\`\`bash
+   # macOS
+   brew install terraform
+
+   # Ubuntu/Debian
+   wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+   echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+   sudo apt update && sudo apt install terraform
+   \`\`\`
+
+2. **Cloud Provider CLI**: Install and configure the appropriate CLI
+${options.provider === 'aws' ? `   \`\`\`bash
+   # AWS CLI
+   aws configure
+   \`\`\`` : options.provider === 'azure' ? `   \`\`\`bash
+   # Azure CLI
+   az login
+   \`\`\`` : `   \`\`\`bash
+   # Google Cloud CLI
+   gcloud auth application-default login
+   \`\`\``}
+
+## Quick Start
+
+1. **Configure Variables**
+   \`\`\`bash
+   cp terraform.tfvars.example terraform.tfvars
+   # Edit terraform.tfvars with your specific values
+   \`\`\`
+
+2. **Initialize Terraform**
+   \`\`\`bash
+   terraform init
+   \`\`\`
+
+3. **Review the Plan**
+   \`\`\`bash
+   terraform plan
+   \`\`\`
+
+4. **Deploy Infrastructure**
+   \`\`\`bash
+   terraform apply
+   \`\`\`
+
+## Important Configuration
+
+### Required Variables
+
+Edit \`terraform.tfvars\` and set these required variables:
+
+${options.provider === 'aws' ? `- \`key_name\`: Your EC2 key pair name for SSH access
+- \`allowed_ssh_cidr\`: CIDR block allowed for SSH access (recommend restricting from 0.0.0.0/0)` :
+options.provider === 'azure' ? `- \`admin_password\`: Secure password for VM admin user
+- \`ssh_public_key_path\`: Path to your SSH public key file
+- \`allowed_ssh_cidr\`: CIDR block allowed for SSH access (recommend restricting from 0.0.0.0/0)` :
+`- \`project_id\`: Your GCP project ID
+- \`ssh_public_keys\`: List of SSH public keys for instance access`}
+
+### Security Considerations
+
+1. **SSH Access**: By default, SSH access is open to 0.0.0.0/0. Restrict this to your IP range.
+2. **Passwords**: Use strong passwords and consider using secrets management.
+3. **Encryption**: All resources are configured with encryption at rest where possible.
+4. **Network Security**: Review firewall rules and security groups before deployment.
+
+## File Structure
+
+\`\`\`
+${path.basename(outputDir)}/
+├── main.tf                    # Main infrastructure configuration
+├── provider.tf               # Provider configuration
+${options.variables ? '├── variables.tf              # Input variables\n' : ''}${options.outputs ? '├── outputs.tf                # Output values\n' : ''}├── terraform.tfvars.example  # Example variable values
+├── startup-scripts/          # Instance startup scripts
+${options.modules ? '├── modules/                   # Terraform modules\n' : ''}└── README.md                 # This file
+\`\`\`
+
+## Customization
+
+### Startup Scripts
+
+Edit files in \`startup-scripts/\` to customize what happens when instances start. These scripts will:
+- Update system packages
+- Install basic tools
+- Set up application environment
+
+### Resource Modifications
+
+You can modify the generated Terraform configuration to:
+- Change instance types/sizes
+- Modify network configuration
+- Add additional resources
+- Customize security groups/firewalls
+
+## Monitoring and Management
+
+After deployment, consider:
+1. Setting up monitoring and logging
+2. Implementing backup strategies
+3. Configuring auto-scaling (if needed)
+4. Setting up CI/CD pipelines
+
+## Support
+
+For issues with this generated configuration:
+- 📧 Email: support@optimisely.ai
+- 🌐 Website: https://optimisely.ai
+- 📚 Documentation: https://docs.optimisely.ai
+
+## Generated Resources
+
+${scanResult.resources.compute.length > 0 ? `### Compute Resources (${scanResult.resources.compute.length})
+${scanResult.resources.compute.map((resource: any, index: number) =>
+  `- ${resource.name || `Instance ${index + 1}`} (${resource.instanceType || 'N/A'})`
+).join('\n')}
+` : ''}
+
+${scanResult.resources.storage.length > 0 ? `### Storage Resources (${scanResult.resources.storage.length})
+${scanResult.resources.storage.map((resource: any, index: number) =>
+  `- ${resource.name || `Storage ${index + 1}`} (${resource.storageType || 'N/A'})`
+).join('\n')}
+` : ''}
+
+${scanResult.resources.database.length > 0 ? `### Database Resources (${scanResult.resources.database.length})
+${scanResult.resources.database.map((resource: any, index: number) =>
+  `- ${resource.name || `Database ${index + 1}`} (${resource.engine || 'N/A'})`
+).join('\n')}
+` : ''}
+
+---
+
+*Generated by Optimisely Cloud SDK v1.0.0*
+`;
+}
+
+function sanitizeResourceName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, '_')
+    .replace(/^[0-9]/, 'r$&')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 63);
 }
 
 async function getCloudConfig(provider: string, region?: string, configFile?: string): Promise<CloudConnectorConfig> {
