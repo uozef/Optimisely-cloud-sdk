@@ -1,5 +1,5 @@
 {
-  "name": "@optimisely/cloud-sdk",
+  "name": "optimisely-cloud-sdk",
   "version": "1.0.0",
   "description": "Optimisely Cloud SDK - Extract and analyze cloud infrastructure components across AWS, Azure, and GCP",
   "main": "dist/index.js",
@@ -30,7 +30,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/optimisely-ai/cloud-sdk.git"
+    "url": "https://github.com/yousefhosseini/optimisely-cloud-sdk.git"
   },
   "homepage": "https://optimisely.ai",
   "dependencies": {

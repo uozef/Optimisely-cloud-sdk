@@ -20,12 +20,12 @@ A comprehensive Node.js SDK and command-line tool for scanning, analyzing, and o
 
 ### As a Node.js package:
 ```bash
-npm install @optimisely/cloud-sdk
+npm install optimisely-cloud-sdk
 ```
 
 ### As a global CLI tool:
 ```bash
-npm install -g @optimisely/cloud-sdk
+npm install -g optimisely-cloud-sdk
 
 # Now you can use the 'optimisely' command anywhere
 optimisely scan --provider aws --region us-east-1
@@ -111,7 +111,7 @@ optimisely providers
 ### Basic Usage
 
 ```typescript
-import { OptimiselySDK } from '@optimisely/cloud-sdk';
+import { OptimiselySDK } from 'optimisely-cloud-sdk';
 
 const sdk = new OptimiselySDK();
 
@@ -140,7 +140,7 @@ console.log(`Optimization opportunities: ${result.optimizationOpportunities.leng
 ### Multi-Provider Scanning
 
 ```typescript
-import { OptimiselySDK } from '@optimisely/cloud-sdk';
+import { OptimiselySDK } from 'optimisely-cloud-sdk';
 
 const sdk = new OptimiselySDK();
 

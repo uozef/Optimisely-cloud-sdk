@@ -6,10 +6,10 @@ This document provides comprehensive examples for using the Optimisely Cloud SDK
 
 ```bash
 # Install globally to use the CLI anywhere
-npm install -g @optimisely/cloud-sdk
+npm install -g optimisely-cloud-sdk
 
 # Or run locally
-npx @optimisely/cloud-sdk
+npx optimisely-cloud-sdk
 ```
 
 ## Configuration
