@@ -1,6 +1,6 @@
 {
   "name": "optimisely-cloud-sdk",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Optimisely Cloud SDK - Extract, analyze, and generate Terraform Infrastructure as Code from cloud resources across AWS, Azure, and GCP",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -34,7 +34,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yousefhosseini/optimisely-cloud-sdk.git"
+    "url": "https://github.com/uozef/Optimisely-cloud-sdk.git"
   },
   "homepage": "https://optimisely.ai",
   "dependencies": {
