@@ -9,6 +9,8 @@ import * as dotenv from 'dotenv';
 import { OptimiselySDK } from './index';
 import { CloudConnectorConfig, ScanOptions } from './types';
 import { generateTerraform, TerraformOptions } from './terraform';
+import { SecurityScanner, SecurityReporter } from './security';
+import { SecurityScanOptions, SecurityConfig } from './security/types';
 import { createLogger, format, transports } from 'winston';
 import { mkdirSync, existsSync } from 'fs';
 import * as path from 'path';
@@ -133,6 +135,29 @@ program
     } catch (error) {
       logger.error('Optimization failed:', error);
       console.error(chalk.red('❌ Optimization failed:'), error instanceof Error ? error.message : error);
+      process.exit(1);
+    }
+  });
+
+// Security scan command
+program
+  .command('security')
+  .description('Comprehensive security vulnerability scanning for cloud infrastructure')
+  .option('-p, --provider <provider>', 'Cloud provider (aws, azure, gcp)', 'aws')
+  .option('-r, --regions <regions>', 'Cloud regions (comma-separated)')
+  .option('-s, --severity <severities>', 'Filter by severity levels (comma-separated: low,medium,high,critical)')
+  .option('-c, --categories <categories>', 'Filter by security categories (comma-separated)')
+  .option('-o, --output <file>', 'Output file path')
+  .option('-f, --format <format>', 'Output format (json, html, csv, sarif, junit)', 'json')
+  .option('--include-compliance', 'Include compliance framework analysis', false)
+  .option('--config <file>', 'Security scanner configuration file')
+  .option('-v, --verbose', 'Verbose output', false)
+  .action(async (options) => {
+    try {
+      await handleSecurityCommand(options);
+    } catch (error) {
+      logger.error('Security scan failed:', error);
+      console.error(chalk.red('❌ Security scan failed:'), error instanceof Error ? error.message : error);
       process.exit(1);
     }
   });
@@ -603,6 +628,88 @@ echo "$(date): Startup script completed" >> /var/log/startup.log
 
   } catch (error) {
     spinner.fail('Terraform generation failed');
+    throw error;
+  }
+}
+
+async function handleSecurityCommand(options: any) {
+  const spinner = ora('Initializing security scan...').start();
+
+  try {
+    // Get configuration
+    const config = await getCloudConfig(options.provider, options.regions, options.config);
+
+    // Load security scanner configuration
+    let securityConfig: SecurityConfig = {};
+    if (options.config && existsSync(options.config)) {
+      try {
+        securityConfig = require(path.resolve(options.config));
+      } catch (error) {
+        logger.warn(`Failed to load security config from ${options.config}:`, error);
+      }
+    }
+
+    spinner.text = `Scanning ${options.provider.toUpperCase()} infrastructure for security vulnerabilities...`;
+
+    // Initialize security scanner
+    const scanner = new SecurityScanner(securityConfig);
+
+    // Prepare scan options
+    const scanOptions: SecurityScanOptions = {
+      provider: options.provider,
+      regions: options.regions ? options.regions.split(',') : undefined,
+      severity: options.severity ? options.severity.split(',') : undefined,
+      categories: options.categories ? options.categories.split(',') : undefined,
+      includeCompliance: options.includeCompliance,
+      outputFormat: options.format,
+      outputFile: options.output,
+      verbose: options.verbose
+    };
+
+    // Perform security scan
+    const result = await scanner.scan(scanOptions, config.credentials);
+
+    spinner.succeed(`Security scan completed! Found ${result.totalVulnerabilities} vulnerabilities`);
+
+    // Print console summary
+    SecurityReporter.printConsoleSummary(result);
+
+    // Generate and save report
+    if (options.output || options.format !== 'json') {
+      spinner.start('Generating security report...');
+
+      const reportContent = SecurityReporter.generateReport(result, options.format, options.output);
+
+      if (options.output) {
+        console.log(chalk.blue(`\n💾 Security report saved to: ${options.output}`));
+      } else if (options.format === 'json') {
+        console.log('\n' + reportContent);
+      }
+
+      spinner.succeed('Security report generated successfully!');
+    }
+
+    // Display actionable recommendations
+    if (result.summary.criticalFindings.length > 0) {
+      console.log(chalk.redBright(`\n🚨 URGENT: ${result.summary.criticalFindings.length} critical security issues require immediate attention!`));
+    }
+
+    if (result.summary.quickWins.length > 0) {
+      console.log(chalk.green(`\n💡 Quick wins: ${result.summary.quickWins.length} issues can be resolved automatically`));
+    }
+
+    // Exit with appropriate code based on findings
+    const exitCode = result.severityBreakdown.critical > 0 ? 2 :
+                    result.severityBreakdown.high > 0 ? 1 : 0;
+
+    if (exitCode > 0) {
+      console.log(chalk.yellow(`\n⚠️  Exiting with code ${exitCode} due to security findings`));
+    }
+
+    process.exit(exitCode);
+
+  } catch (error) {
+    spinner.fail('Security scan failed');
     throw error;
   }
 }

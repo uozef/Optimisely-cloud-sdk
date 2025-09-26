@@ -21,6 +21,12 @@ A comprehensive Node.js SDK and command-line tool for scanning, analyzing, and o
 - **🆕 Modular Structure**: Generate organized Terraform modules for better maintainability
 - **🆕 Variables & Outputs**: Automatic generation of variables.tf and outputs.tf files
 - **🆕 Infrastructure Drift Detection**: Compare current state with generated Terraform configurations
+- **🔒 Security Vulnerability Scanning**: Comprehensive security analysis with 100+ rules
+- **🛡️ Multi-Cloud Security**: Unified security scanning across AWS, Azure, and GCP
+- **📋 Compliance Frameworks**: CIS Benchmarks, SOC 2, PCI DSS, and more
+- **📊 Advanced Reporting**: HTML, SARIF, CSV, JUnit output formats for CI/CD integration
+- **🚨 Risk Assessment**: Automated risk scoring and security posture evaluation
+- **🎯 Actionable Remediation**: Detailed fix instructions with Terraform automation
 
 ## 📦 Installation
 
@@ -110,6 +116,21 @@ optimisely optimize --provider gcp --severity low --output optimizations.json
 ### List Supported Providers
 ```bash
 optimisely providers
+```
+
+### Security Vulnerability Scanning
+```bash
+# Basic security scan
+optimisely security --provider aws --regions us-east-1,us-west-2
+
+# Comprehensive security scan with compliance analysis
+optimisely security --provider aws --severity critical,high,medium --include-compliance --format html --output security-report.html
+
+# CI/CD integration with SARIF output
+optimisely security --provider aws --format sarif --output security-results.sarif --config security-config.json
+
+# Multi-region scan with specific categories
+optimisely security --provider aws --regions us-east-1,us-west-2,eu-west-1 --categories access_control,network_security,data_protection
 ```
 
 ### Generate Terraform Infrastructure as Code
@@ -226,6 +247,35 @@ const csvOutput = sdk.exportResults(result, 'csv');
 // Save to file
 import { writeFileSync } from 'fs';
 writeFileSync('scan-results.json', jsonOutput);
+```
+
+### Security Vulnerability Scanning
+
+```typescript
+import { SecurityScanner } from 'optimisely-cloud-sdk/security';
+
+const scanner = new SecurityScanner();
+
+// Basic security scan
+const securityOptions = {
+  provider: 'aws',
+  regions: ['us-east-1', 'us-west-2'],
+  severity: ['critical', 'high'],
+  categories: ['access_control', 'network_security', 'data_protection'],
+  includeCompliance: true
+};
+
+const securityResult = await scanner.scan(securityOptions, credentials);
+
+console.log(`Found ${securityResult.totalVulnerabilities} security issues`);
+console.log(`Critical: ${securityResult.summary.critical}, High: ${securityResult.summary.high}`);
+console.log(`Security Score: ${securityResult.securityScore}/100`);
+
+// Generate security report
+import { SecurityReports } from 'optimisely-cloud-sdk/security';
+
+const htmlReport = SecurityReports.generateReport(securityResult, 'html');
+const sarifReport = SecurityReports.generateReport(securityResult, 'sarif');
 ```
 
 ### Generate Terraform Infrastructure as Code

@@ -1,0 +1,36 @@
+{
+  "rules": {
+    "enabled": [
+      "AWS-001",
+      "AWS-002",
+      "AWS-003",
+      "AWS-004",
+      "AWS-005",
+      "AZURE-001",
+      "AZURE-002",
+      "GCP-001",
+      "MULTI-001"
+    ],
+    "disabled": []
+  },
+  "thresholds": {
+    "critical": 0,
+    "high": 5,
+    "medium": 20,
+    "low": 50
+  },
+  "compliance": {
+    "frameworks": [
+      "CIS AWS Foundations",
+      "CIS Azure Foundations",
+      "CIS GCP Foundations",
+      "SOC 2",
+      "PCI DSS"
+    ]
+  },
+  "reporting": {
+    "includeEvidence": true,
+    "includeFalsePositives": false,
+    "groupBy": "severity"
+  }
+}
