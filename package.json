@@ -1,7 +1,7 @@
 {
   "name": "optimisely-cloud-sdk",
-  "version": "1.0.0",
-  "description": "Optimisely Cloud SDK - Extract and analyze cloud infrastructure components across AWS, Azure, and GCP",
+  "version": "1.1.0",
+  "description": "Optimisely Cloud SDK - Extract, analyze, and generate Terraform Infrastructure as Code from cloud resources across AWS, Azure, and GCP",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -24,7 +24,11 @@
     "optimization",
     "devops",
     "finops",
-    "cost-optimization"
+    "cost-optimization",
+    "terraform",
+    "infrastructure-as-code",
+    "iac",
+    "multi-cloud"
   ],
   "author": "Optimisely.ai",
   "license": "MIT",
@@ -50,7 +54,6 @@
     "commander": "^11.0.0",
     "dotenv": "^16.3.0",
     "inquirer": "^9.2.0",
-    "optimisely-cloud-sdk": "^1.0.0",
     "ora": "^8.0.0",
     "winston": "^3.11.0"
   },

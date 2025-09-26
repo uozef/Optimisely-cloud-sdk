@@ -29,7 +29,7 @@ export class GCPConnector {
   }
 
   async scanResources(options: ScanOptions = {}): Promise<ScanResult> {
-    const timestamp = new Date();
+    const timestamp = new Date().toISOString();
     const resources = {
       compute: [] as ComputeResource[],
       storage: [] as StorageResource[],
@@ -124,7 +124,7 @@ export class GCPConnector {
             billing: metadata.billing,
             retentionPolicy: metadata.retentionPolicy
           },
-          createdAt: metadata.timeCreated ? new Date(metadata.timeCreated) : undefined
+          createdAt: metadata.timeCreated ? new Date(metadata.timeCreated).toISOString() : ''
         });
       }
 
@@ -150,7 +150,7 @@ export class GCPConnector {
 
     // Estimate Compute Engine costs
     resources.compute.forEach((instance: ComputeResource) => {
-      const hourlyCost = this.getGCPInstanceHourlyCost(instance.instanceType);
+      const hourlyCost = this.getGCPInstanceHourlyCost(instance.instanceType || '');
       const monthlyCost = hourlyCost * 24 * 30;
       totalCost += monthlyCost;
       breakdown['compute'] = (breakdown['compute'] || 0) + monthlyCost;
@@ -196,8 +196,8 @@ export class GCPConnector {
 
     // Check for high-performance machine types
     const highPerfInstances = resources.compute.filter((i: ComputeResource) =>
-      i.instanceType.includes('n1-highmem') || i.instanceType.includes('n1-highcpu') ||
-      i.instanceType.includes('n2-highmem') || i.instanceType.includes('n2-highcpu')
+      i.instanceType?.includes('n1-highmem') || i.instanceType?.includes('n1-highcpu') ||
+      i.instanceType?.includes('n2-highmem') || i.instanceType?.includes('n2-highcpu')
     );
     if (highPerfInstances.length > 0) {
       opportunities.push({

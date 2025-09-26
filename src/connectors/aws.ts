@@ -55,7 +55,7 @@ export class AWSConnector {
   }
 
   async scanResources(options: ScanOptions = {}): Promise<ScanResult> {
-    const timestamp = new Date();
+    const timestamp = new Date().toISOString();
     const resources = {
       compute: [] as ComputeResource[],
       storage: [] as StorageResource[],
@@ -151,7 +151,7 @@ export class AWSConnector {
                   privateIpAddress: instance.PrivateIpAddress,
                   publicIpAddress: instance.PublicIpAddress
                 },
-                createdAt: instance.LaunchTime
+                createdAt: instance.LaunchTime?.toISOString() || ''
               });
             }
           }
@@ -213,7 +213,7 @@ export class AWSConnector {
               bucketName: bucket.Name,
               creationDate: bucket.CreationDate
             },
-            createdAt: bucket.CreationDate
+            createdAt: bucket.CreationDate?.toISOString() || ''
           });
         }
       }
@@ -260,7 +260,7 @@ export class AWSConnector {
               dbSubnetGroup: instance.DBSubnetGroup?.DBSubnetGroupName,
               vpcSecurityGroups: instance.VpcSecurityGroups?.map(sg => sg.VpcSecurityGroupId)
             },
-            createdAt: instance.InstanceCreateTime
+            createdAt: instance.InstanceCreateTime?.toISOString() || ''
           });
         }
       }
@@ -293,6 +293,7 @@ export class AWSConnector {
             provider: 'aws',
             region: this.region,
             status: vpc.State === 'available' ? 'running' : 'unknown',
+            createdAt: '',
             tags,
             networkType: 'vpc',
             cidr: vpc.CidrBlock,
@@ -336,6 +337,7 @@ export class AWSConnector {
             provider: 'aws',
             region: this.region,
             status: func.State === 'Active' ? 'running' : 'unknown',
+            createdAt: '',
             tags,
             runtime: func.Runtime || 'unknown',
             timeout: func.Timeout || 0,
@@ -349,7 +351,7 @@ export class AWSConnector {
               architectures: func.Architectures,
               environment: func.Environment?.Variables
             },
-            lastModified: func.LastModified ? new Date(func.LastModified) : undefined
+            lastModified: func.LastModified ? new Date(func.LastModified).toISOString() : undefined
           });
         }
       }
@@ -367,7 +369,7 @@ export class AWSConnector {
 
     // Estimate EC2 costs
     resources.compute.forEach((instance: ComputeResource) => {
-      const hourlyCost = this.getInstanceHourlyCost(instance.instanceType);
+      const hourlyCost = this.getInstanceHourlyCost(instance.instanceType || '');
       const monthlyCost = hourlyCost * 24 * 30;
       totalCost += monthlyCost;
       breakdown['compute'] = (breakdown['compute'] || 0) + monthlyCost;
@@ -382,7 +384,7 @@ export class AWSConnector {
 
     // Estimate RDS costs
     resources.database.forEach((db: DatabaseResource) => {
-      const monthlyCost = this.getDatabaseMonthlyCost(db.instanceClass);
+      const monthlyCost = this.getDatabaseMonthlyCost(db.instanceClass || '');
       totalCost += monthlyCost;
       breakdown['database'] = (breakdown['database'] || 0) + monthlyCost;
     });
@@ -427,7 +429,7 @@ export class AWSConnector {
 
     // Check for over-provisioned instances
     const largeInstances = resources.compute.filter((i: ComputeResource) =>
-      i.instanceType.includes('xlarge') || i.instanceType.includes('2xlarge')
+      i.instanceType?.includes('xlarge') || i.instanceType?.includes('2xlarge')
     );
     if (largeInstances.length > 0) {
       opportunities.push({

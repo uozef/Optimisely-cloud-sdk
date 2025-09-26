@@ -72,6 +72,7 @@ export interface CloudResource {
   subnetId?: string;
   publicIp?: string;
   privateIp?: string;
+  networkInterfaces?: any[];
 
   // Storage-specific properties
   storage?: {
@@ -80,10 +81,26 @@ export interface CloudResource {
     encrypted: boolean;
   };
   storageType?: string;
+  size?: number;
+  encrypted?: boolean;
 
   // Database-specific properties
   engine?: string;
   engineVersion?: string;
+  instanceClass?: string;
+  version?: string;
+  multiAz?: boolean;
+  backupRetention?: number;
+
+  // Network-specific properties
+  networkType?: string;
+  cidr?: string;
+
+  // Serverless-specific properties
+  runtime?: string;
+  timeout?: number;
+  codeSize?: number;
+  lastModified?: string;
 
   // Cost information
   estimatedMonthlyCost?: number;

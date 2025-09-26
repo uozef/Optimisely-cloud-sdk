@@ -39,7 +39,7 @@ export class AzureConnector {
   }
 
   async scanResources(options: ScanOptions = {}): Promise<ScanResult> {
-    const timestamp = new Date();
+    const timestamp = new Date().toISOString();
     const resources = {
       compute: [] as ComputeResource[],
       storage: [] as StorageResource[],
@@ -124,6 +124,7 @@ export class AzureConnector {
           instanceType: vmSize,
           vCpus: this.getVMVCpuCount(vmSize),
           memory: this.getVMMemorySize(vmSize),
+          createdAt: '',
           networkInterfaces: vm.networkProfile?.networkInterfaces?.map(ni => ni.id || '') || [],
           metadata: {
             resourceGroup: this.extractResourceGroup(vm.id),
@@ -177,7 +178,7 @@ export class AzureConnector {
             allowBlobPublicAccess: account.allowBlobPublicAccess,
             minimumTlsVersion: account.minimumTlsVersion
           },
-          createdAt: account.creationTime
+          createdAt: account.creationTime?.toISOString() || ''
         });
       }
 
@@ -216,6 +217,7 @@ export class AzureConnector {
               provider: 'azure',
               region: vnet.location || this.location,
               status: 'running',
+              createdAt: '',
               tags,
               networkType: 'vpc',
               metadata: {
@@ -243,7 +245,7 @@ export class AzureConnector {
 
     // Estimate VM costs
     resources.compute.forEach((vm: ComputeResource) => {
-      const hourlyCost = this.getVMHourlyCost(vm.instanceType);
+      const hourlyCost = this.getVMHourlyCost(vm.instanceType || '');
       const monthlyCost = hourlyCost * 24 * 30;
       totalCost += monthlyCost;
       breakdown['compute'] = (breakdown['compute'] || 0) + monthlyCost;

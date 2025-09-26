@@ -15,9 +15,12 @@ A comprehensive Node.js SDK and command-line tool for scanning, analyzing, and o
 - **CLI Tool**: Powerful command-line interface for easy integration
 - **TypeScript Support**: Fully typed for better development experience
 - **Export Formats**: Support for JSON, YAML, CSV, and table formats
-- **Terraform Generation**: Generate Infrastructure as Code from scanned resources
-- **Multi-Cloud IaC**: Support for AWS, Azure, and GCP Terraform providers
-- **Optimization Integration**: Apply cost optimizations to generated Terraform
+- **🆕 Terraform Generation**: Generate complete Infrastructure as Code from scanned resources
+- **🆕 Multi-Cloud IaC**: Support for AWS, Azure, and GCP Terraform providers with best practices
+- **🆕 Optimization Integration**: Apply cost optimizations automatically to generated Terraform
+- **🆕 Modular Structure**: Generate organized Terraform modules for better maintainability
+- **🆕 Variables & Outputs**: Automatic generation of variables.tf and outputs.tf files
+- **🆕 Infrastructure Drift Detection**: Compare current state with generated Terraform configurations
 
 ## 📦 Installation
 
@@ -431,6 +434,15 @@ For support and questions:
 - 📚 Documentation: https://docs.optimisely.ai/cloud-sdk
 
 ## 🚀 Roadmap
+
+### Recently Added (v1.1.0)
+- [x] **Terraform Infrastructure as Code Generation**
+  - Complete Terraform configuration generation from scanned resources
+  - Multi-cloud support (AWS, Azure, GCP) with provider-specific optimizations
+  - Variable and output file generation
+  - Cost optimization integration
+  - Modular structure support
+  - Infrastructure drift detection capabilities
 
 ### Upcoming Features
 
